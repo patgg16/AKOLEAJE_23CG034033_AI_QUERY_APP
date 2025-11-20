@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Query App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to the AI Query App 🧠</h1>
+        <p>Ask the Gemini AI anything you want!</p>
+
+        <div class="query-section">
+            <textarea id="questionInput" placeholder="Enter your question here..."></textarea>
+            <button id="submitButton">Get Answer</button>
+        </div>
+
+        <div class="answer-section">
+            <h2>AI Response:</h2>
+            <div id="responseOutput">
+                <p>Awaiting your question...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('submitButton').addEventListener('click', async () => {
+            const questionInput = document.getElementById('questionInput');
+            const responseOutput = document.getElementById('responseOutput');
+            const submitButton = document.getElementById('submitButton');
+            
+            const userQuestion = questionInput.value.trim();
+
+            if (userQuestion === "") {
+                alert("Please enter a question.");
+                return;
+            }
+
+            // 1. Disable input/button and show loading state
+            submitButton.textContent = 'Thinking...';
+            submitButton.disabled = true;
+            responseOutput.innerHTML = '<p>The AI is generating a response...</p>';
+            
+            try {
+                // 2. Send the question to the Flask backend via an AJAX call 
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question: userQuestion })
+                });
+
+                const result = await response.json();
+
+                // 3. Handle the response
+                if (response.ok) {
+                    // Success: Display the AI's answer
+                    const formattedAnswer = result.answer.replace(/\n/g, '<br>'); // Basic newline formatting
+                    responseOutput.innerHTML = `<p>${formattedAnswer}</p>`;
+                } else {
+                    // Error: Display the error message
+                    responseOutput.innerHTML = `<p class="error">Error: ${result.error || 'Failed to get a response.'}</p>`;
+                }
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                responseOutput.innerHTML = '<p class="error">A network error occurred. Check your connection or server status.</p>';
+            } finally {
+                // 4. Reset button state
+                submitButton.textContent = 'Get Answer';
+                submitButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
